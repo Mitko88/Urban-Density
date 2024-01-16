@@ -1,6 +1,7 @@
 using SuperGrid2D;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class FieldOfViewRays : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class FieldOfViewRays : MonoBehaviour
 
         layerMask = ~LayerMask.GetMask(layerName);
 
+        var visibleBuildings = new List<int>();
         for (var i = 0; i < transform.childCount; i++)
         {
             var point = transform.GetChild(i);
@@ -33,6 +35,7 @@ public class FieldOfViewRays : MonoBehaviour
                 var orientation = (closestObject.w - closestObject.v).normalized;
                 var visibleObjectsCount = VisibleObjects(point, orientation);
                 point.GetComponent<PointsData>().buildingsVisible = visibleObjectsCount;
+                visibleBuildings.Add(visibleObjectsCount);
                 var heatmapValue = (float)visibleObjectsCount / maxVisibleObjects;
                 Renderer renderer = point.gameObject.GetComponent<Renderer>();
                 if (renderer != null)
@@ -42,6 +45,11 @@ public class FieldOfViewRays : MonoBehaviour
                 }
             }
         }
+
+        var mean = visibleBuildings.Average();
+        var sumOfSquaresOfDifferences = visibleBuildings.Select(val => (val - mean) * (val - mean)).Sum();
+        var standardDeviation = Mathf.Sqrt((float)sumOfSquaresOfDifferences / visibleBuildings.Count);
+        Debug.Log("Average Visible Objects: " + mean + ", Stanard Deviation: " + standardDeviation);
     }
 
     private int VisibleObjects(Transform trans, Vector2 orientation)
