@@ -21,9 +21,18 @@ public class FieldOfViewRays : MonoBehaviour
 
     void Start()
     {
+        Run();
+    }
+
+    public void Run()
+    {
         InitializeGradient();
         InitializeGrid();
+        BuildingsVisibility();
+    }
 
+    private void BuildingsVisibility()
+    {
         layerMask = ~LayerMask.GetMask(layerName);
 
         var visibleBuildings = new List<int>();
