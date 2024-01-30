@@ -17,7 +17,8 @@ public class FieldOfViewRays : MonoBehaviour
     private StaticGrid2D<Line> _linesGrid;
     private float distanceBetweenPoints = 10f;
     public LineRenderer line;
-    public bool showRays; 
+    public bool showRays;
+    public float raysVisTime = 20;
 
     void Start()
     {
@@ -39,19 +40,33 @@ public class FieldOfViewRays : MonoBehaviour
         for (var i = 0; i < transform.childCount; i++)
         {
             var point = transform.GetChild(i);
+            var closestLine = new Line();
+            var distance = 0f;
             foreach (var closestObject in _linesGrid.Contact(new Circle(point.position.x, point.position.z, distanceBetweenPoints)))
             {
-                var orientation = (closestObject.w - closestObject.v).normalized;
-                var visibleObjectsCount = VisibleObjects(point, orientation);
-                point.GetComponent<PointsData>().buildingsVisible = visibleObjectsCount;
-                visibleBuildings.Add(visibleObjectsCount);
-                var heatmapValue = (float)visibleObjectsCount / maxVisibleObjects;
-                Renderer renderer = point.gameObject.GetComponent<Renderer>();
-                if (renderer != null)
+                if (closestLine.v != Vector2.zero)
                 {
-                    // Assign the new color to the material
-                    renderer.material.color = heatmapGradient.Evaluate(heatmapValue);
+                    var currentLineDistance  = closestObject.DistanceSquared(new Vector2(point.position.x, point.position.z));
+                    if (currentLineDistance < distance)
+                    {
+                        closestLine = closestObject;
+                    }
+                    continue;
                 }
+                closestLine = closestObject; 
+                distance = closestObject.DistanceSquared(new Vector2(point.position.x, point.position.z));
+            }
+
+            var orientation = (closestLine.w - closestLine.v).normalized;
+            var visibleObjectsCount = VisibleObjects(point, orientation);
+            point.GetComponent<PointsData>().buildingsVisible = visibleObjectsCount;
+            visibleBuildings.Add(visibleObjectsCount);
+            var heatmapValue = (float)visibleObjectsCount / maxVisibleObjects;
+            Renderer renderer = point.gameObject.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                // Assign the new color to the material
+                renderer.sharedMaterial.color = heatmapGradient.Evaluate(heatmapValue);
             }
         }
 
@@ -79,7 +94,7 @@ public class FieldOfViewRays : MonoBehaviour
             {
                 if (showRays)
                 {
-                    Debug.DrawLine(origin, hit.point, Color.yellow, 100); // Draws ray in the Scene View
+                    Debug.DrawLine(origin, hit.point, Color.yellow, raysVisTime); // Draws ray in the Scene View
                 }
                 // Ray hit something, handle hit
                 var objectHitName = hit.collider.gameObject.name;
